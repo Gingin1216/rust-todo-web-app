@@ -1,16 +1,39 @@
+mod db;
+mod models;
 mod routes;
 
-use std::sync::{Arc, Mutex};
-
 use axum::http::{HeaderValue, Method, header::CONTENT_TYPE};
+use sqlx::MySqlPool;
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
 
 #[tokio::main]
 async fn main() {
-    let state = Arc::new(Mutex::new(Vec::new()));
+    // 从 backend/.env 加载 DATABASE_URL
+    dotenvy::dotenv().ok();
 
-    // 仅允许 Live Server 等本地前端来源跨域访问
+    let pool = db::create_pool()
+        .await
+        .expect("failed to create MySQL pool");
+
+    db::init_schema(&pool)
+        .await
+        .expect("failed to initialize database schema");
+
+    let app = create_app(pool);
+
+    let listener = TcpListener::bind("127.0.0.1:3000")
+        .await
+        .expect("failed to bind 127.0.0.1:3000");
+
+    println!("Todo API V2 (MySQL) running at http://127.0.0.1:3000");
+    axum::serve(listener, app)
+        .await
+        .expect("server failed");
+}
+
+/// 组装路由：注入 MySqlPool，并附加 CORS
+fn create_app(pool: MySqlPool) -> axum::Router {
     let frontend_origin = "http://127.0.0.1:5500"
         .parse::<HeaderValue>()
         .expect("invalid CORS origin");
@@ -23,17 +46,7 @@ async fn main() {
             Method::PUT,
             Method::DELETE,
         ])
-        // 前端 fetch 发送 JSON 时需要 Content-Type
         .allow_headers([CONTENT_TYPE]);
 
-    let app = routes::create_router(state).layer(cors);
-
-    let listener = TcpListener::bind("127.0.0.1:3000")
-        .await
-        .expect("failed to bind 127.0.0.1:3000");
-
-    println!("Todo API running at http://127.0.0.1:3000");
-    axum::serve(listener, app)
-        .await
-        .expect("server failed");
+    routes::create_router(pool).layer(cors)
 }
