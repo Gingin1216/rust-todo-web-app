@@ -60,7 +60,7 @@ body {
 .composer {
   display: flex;
   gap: 10px;
-  margin-bottom: 24px;
+  margin-bottom: 0;
 }
 
 .composer input {
@@ -94,6 +94,103 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s, transform 0.15s;
+}
+
+/* 优先级选择按钮组 */
+.priority-group {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  margin-top: 8px;
+  background: #252535;
+  border-radius: 8px;
+}
+
+.priority-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+  border: 1px solid #555;
+  border-radius: 6px;
+  background: transparent;
+  color: #aaa;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.priority-option:hover {
+  border-color: #888;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ddd;
+}
+
+.priority-option.selected {
+  border-width: 1.5px;
+}
+
+.priority-option[data-priority="1"].selected {
+  border-color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.2);
+  color: #ff6b6b;
+}
+
+.priority-option[data-priority="2"].selected {
+  border-color: #ffd93d;
+  background: rgba(255, 217, 61, 0.2);
+  color: #ffd93d;
+}
+
+.priority-option[data-priority="3"].selected {
+  border-color: #6bcb77;
+  background: rgba(107, 203, 119, 0.2);
+  color: #6bcb77;
+}
+
+/* 编辑模式优先级选择器 */
+.edit-priority-group {
+  margin-top: 0;
+  padding: 6px;
+  gap: 4px;
+}
+
+.edit-priority-group .priority-option {
+  padding: 6px 0;
+  font-size: 0.8rem;
+}
+
+/* 优先级标签 */
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.priority-1 {
+  background: rgba(255, 107, 107, 0.2);
+  color: #ff6b6b;
+}
+
+.priority-2 {
+  background: rgba(255, 217, 61, 0.2);
+  color: #ffd93d;
+}
+
+.priority-3 {
+  background: rgba(107, 203, 119, 0.2);
+  color: #6bcb77;
 }
 
 .composer button:hover {

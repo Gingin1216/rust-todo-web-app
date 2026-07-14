@@ -44,18 +44,18 @@ async function loadTodos() {
 }
 
 // POST /todos
-async function addTodo(title) {
+async function addTodo(title, priority) {
   await request("/todos", {
     method: "POST",
-    body: JSON.stringify({ title }),
+    body: JSON.stringify({ title, priority }),
   });
 }
 
 // PUT /todos/:id
-async function updateTodo(id, title) {
+async function updateTodo(id, title, priority) {
   await request(`/todos/${id}`, {
     method: "PUT",
-    body: JSON.stringify({ title }),
+    body: JSON.stringify({ title, priority }),
   });
 }
 
@@ -81,7 +81,18 @@ function renderTodos(todos) {
 
     const titleSpan = document.createElement("span");
     titleSpan.className = "todo-title";
-    titleSpan.textContent = todo.title;
+
+    // 优先级标签
+    const priorityMap = { 1: "高", 2: "中", 3: "低" };
+    const priorityBadge = document.createElement("span");
+    priorityBadge.className = `priority-badge priority-${todo.priority}`;
+    priorityBadge.textContent = priorityMap[todo.priority] || "";
+
+    titleSpan.appendChild(priorityBadge);
+    // 标题文字
+    const titleText = document.createElement("span");
+    titleText.textContent = todo.title;
+    titleSpan.appendChild(titleText);
 
     const actions = document.createElement("div");
     actions.className = "todo-actions";
@@ -125,6 +136,31 @@ function renderTodos(todos) {
 }
 
 function startEdit(li, todo) {
+  // 编辑模式改用纵向布局
+  li.style.flexDirection = "column";
+  li.style.alignItems = "stretch";
+  li.style.gap = "8px";
+
+  // 优先级选择
+  const priorityGroup = document.createElement("div");
+  priorityGroup.className = "priority-group edit-priority-group";
+  const levels = [
+    { p: 1, label: "高" },
+    { p: 2, label: "中" },
+    { p: 3, label: "低" },
+  ];
+  levels.forEach(({ p, label }) => {
+    const opt = document.createElement("span");
+    opt.className = "priority-option" + (p === todo.priority ? " selected" : "");
+    opt.dataset.priority = p;
+    opt.textContent = label;
+    opt.addEventListener("click", () => {
+      priorityGroup.querySelectorAll(".priority-option").forEach((o) => o.classList.remove("selected"));
+      opt.classList.add("selected");
+    });
+    priorityGroup.appendChild(opt);
+  });
+
   const input = document.createElement("input");
   input.className = "todo-edit-input";
   input.value = todo.title;
@@ -141,7 +177,14 @@ function startEdit(li, todo) {
   actions.className = "todo-actions";
   actions.append(saveBtn, cancelBtn);
 
-  li.replaceChildren(input, actions);
+  // 编辑操作行：输入框 + 按钮并排
+  const editRow = document.createElement("div");
+  editRow.style.display = "flex";
+  editRow.style.gap = "8px";
+  editRow.style.alignItems = "center";
+  editRow.append(input, actions);
+
+  li.replaceChildren(priorityGroup, editRow);
 
   const finish = () => loadTodos();
 
@@ -152,7 +195,8 @@ function startEdit(li, todo) {
       return;
     }
     try {
-      await updateTodo(todo.id, title);
+      const newPriority = parseInt(priorityGroup.querySelector(".selected").dataset.priority, 10);
+      await updateTodo(todo.id, title, newPriority);
       await finish();
     } catch (err) {
       setStatus(err.message, true);
@@ -169,12 +213,21 @@ addForm.addEventListener("submit", async (e) => {
   if (!title) return;
 
   try {
-    await addTodo(title);
+    const priority = parseInt(document.querySelector("#priority-group .selected").dataset.priority, 10);
+    await addTodo(title, priority);
     titleInput.value = "";
     await loadTodos();
   } catch (err) {
     setStatus(err.message, true);
   }
+});
+
+// 创建表单优先级按钮点击切换
+document.getElementById("priority-group").addEventListener("click", (e) => {
+  const target = e.target.closest(".priority-option");
+  if (!target) return;
+  target.parentElement.querySelectorAll(".priority-option").forEach((o) => o.classList.remove("selected"));
+  target.classList.add("selected");
 });
 
 loadTodos();

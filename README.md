@@ -47,6 +47,7 @@
 * 前端状态展示优化
 * 前后端通信
 * CORS 配置
+* priority 优先级管理
 * Git 版本管理
 
 ---
@@ -138,7 +139,7 @@ cargo run
 运行成功后：
 
 ```text
-Todo API V3 running at http://127.0.0.1:3000
+Todo API V4.1 running at http://127.0.0.1:3000
 ```
 
 ---
@@ -175,12 +176,28 @@ curl -X POST http://127.0.0.1:3000/todos ^
 -d "{\"title\":\"学习 Rust\"}"
 ```
 
+priority 可选，默认 2（中优先级）：
+
+```bash
+curl -X POST http://127.0.0.1:3000/todos ^
+-H "Content-Type: application/json" ^
+-d "{\"title\":\"学习 Rust\", \"priority\":1}"
+```
+
 ### 修改 Todo
 
 ```bash
 curl -X PUT http://127.0.0.1:3000/todos/1 ^
 -H "Content-Type: application/json" ^
 -d "{\"title\":\"学习 MySQL\"}"
+```
+
+priority 可选，传值则一并更新：
+
+```bash
+curl -X PUT http://127.0.0.1:3000/todos/1 ^
+-H "Content-Type: application/json" ^
+-d "{\"title\":\"学习 MySQL\", \"priority\":3}"
 ```
 
 ### 删除 Todo
@@ -222,3 +239,26 @@ curl -X PATCH http://127.0.0.1:3000/todos/1/toggle
 * 用户 Todo 数据隔离
 * Docker 部署
 * 项目工程化整理
+
+---
+
+### V4.1 — Todo 优先级管理
+
+发布日期：2026-07-14
+
+新增功能：
+
+* 数据库新增 priority 字段（INT, NOT NULL, DEFAULT 2）
+* 优先级取值范围：1=高, 2=中, 3=低
+* GET /todos 返回数据包含 priority
+* POST /todos 创建时支持 priority 参数
+* PUT /todos/:id 更新时支持 priority 参数
+* 前端新增优先级选择器（高/中/低 标签式按钮）
+* 任务列表显示优先级标签（红/橙/绿）
+* 编辑模式支持修改优先级
+
+技术决策：
+
+* 使用 i32 类型存储优先级，便于后续扩展
+* 默认优先级为 2（中）
+* 前端使用标签式按钮组替代下拉框，提升暗色主题交互体验

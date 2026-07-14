@@ -7,10 +7,12 @@ pub struct Todo {
     pub id: u64,
     pub title: String,
     pub completed: bool,
+    pub priority: i32,
 }
 
-/// 创建 / 更新请求体（与 V1 API 保持一致）
+/// 创建 / 更新请求体；priority 可选，未传时创建默认 2，更新时保持不变
 #[derive(Debug, Deserialize)]
 pub struct CreateTodo {
     pub title: String,
+    pub priority: Option<i32>,
 }
