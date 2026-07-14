@@ -45,6 +45,7 @@ fn create_app(pool: MySqlPool) -> axum::Router {
             Method::POST,
             Method::PUT,
             Method::DELETE,
+            Method::PATCH,
         ])
         .allow_headers([CONTENT_TYPE]);
 

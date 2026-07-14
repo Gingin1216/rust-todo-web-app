@@ -64,6 +64,11 @@ async function removeTodo(id) {
   await request(`/todos/${id}`, { method: "DELETE" });
 }
 
+// PATCH /todos/:id/toggle
+async function toggleTodo(id) {
+  await request(`/todos/${id}/toggle`, { method: "PATCH" });
+}
+
 function renderTodos(todos) {
   todoList.innerHTML = "";
   todoCount.textContent = String(todos.length);
@@ -71,7 +76,7 @@ function renderTodos(todos) {
 
   todos.forEach((todo) => {
     const li = document.createElement("li");
-    li.className = "todo-item";
+    li.className = "todo-item" + (todo.completed ? " completed" : "");
     li.dataset.id = todo.id;
 
     const titleSpan = document.createElement("span");
@@ -80,6 +85,19 @@ function renderTodos(todos) {
 
     const actions = document.createElement("div");
     actions.className = "todo-actions";
+
+    const completeBtn = document.createElement("button");
+    completeBtn.type = "button";
+    completeBtn.className = "btn-complete";
+    completeBtn.textContent = todo.completed ? "取消完成" : "完成";
+    completeBtn.addEventListener("click", async () => {
+      try {
+        await toggleTodo(todo.id);
+        await loadTodos();
+      } catch (err) {
+        setStatus(err.message, true);
+      }
+    });
 
     const editBtn = document.createElement("button");
     editBtn.type = "button";
@@ -91,6 +109,7 @@ function renderTodos(todos) {
     deleteBtn.className = "btn-delete";
     deleteBtn.textContent = "删除";
     deleteBtn.addEventListener("click", async () => {
+      if (!confirm("确定删除这条任务吗？")) return;
       try {
         await removeTodo(todo.id);
         await loadTodos();
@@ -99,7 +118,7 @@ function renderTodos(todos) {
       }
     });
 
-    actions.append(editBtn, deleteBtn);
+    actions.append(completeBtn, editBtn, deleteBtn);
     li.append(titleSpan, actions);
     todoList.appendChild(li);
   });

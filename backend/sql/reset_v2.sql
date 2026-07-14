@@ -1,0 +1,12 @@
+-- V2 彻底重建（清空 todos 数据）
+USE todo_db;
+
+DROP TABLE IF EXISTS todos;
+
+CREATE TABLE todos (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DESCRIBE todos;
+SHOW CREATE TABLE todos;

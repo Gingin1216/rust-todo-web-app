@@ -177,6 +177,15 @@ body {
   word-break: break-word;
 }
 
+.todo-item.completed {
+  opacity: 0.55;
+}
+
+.todo-item.completed .todo-title {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
 .todo-actions {
   display: flex;
   gap: 6px;

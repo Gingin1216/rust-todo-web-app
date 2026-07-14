@@ -6,6 +6,7 @@ use sqlx::FromRow;
 pub struct Todo {
     pub id: u64,
     pub title: String,
+    pub completed: bool,
 }
 
 /// 创建 / 更新请求体（与 V1 API 保持一致）
