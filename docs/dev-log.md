@@ -1,139 +1,163 @@
-# Todo Web App 开发日志
+﻿# Todo Web App 开发日志
 
-## 2026-05-28
+## v1.0 — 基础 Todo
+
+日期：2026-05-28
 
 ### 完成内容
 
-* 完成 Rust 后端搭建
-* 使用 axum 创建 REST API
-* 完成前端页面
-* 实现前后端 fetch 通信
-* 成功运行 Todo Web App
-* 配置 CORS
-* 使用 Git 初始化项目
-* 完成 v1.0 提交
+* 使用 Axum 搭建 Rust 后端 REST API
+* 基于 HTML + CSS + JavaScript 构建前端页面
+* 实现前后端分离架构，通过 fetch + JSON 通信
+* 数据暂存于后端内存 Vec，支持基本 CRUD
+* 配置 CORS 中间件允许跨域请求
+* 使用 Git 初始化项目并完成 v1.0 提交
+
+### 技术实现
+
+* 后端：Axum Router + Tokio 异步运行时 + Serde 序列化
+* 前端：DOM API 动态渲染 + fetch 网络请求
+* 路由：GET/POST/PUT/DELETE /todos
 
 ### 遇到的问题
 
-1. cargo 下载 crates 超时
-2. Windows PowerShell 路径包含空格
-3. VS Code Live Server 未正确启动
+1. cargo 下载 crates 超时（GFW 网络限制）
+2. Windows PowerShell 路径包含空格导致命令执行失败
+3. VS Code Live Server 扩展未正确识别项目
 
 ### 解决方案
 
-* 配置 cargo 镜像源
-* 使用双引号包裹路径
-* 安装 Live Server 插件并使用 Go Live
-
-### 当前项目状态
-
-已实现：
-
-* 添加 Todo
-* 获取 Todo 列表
-* 前后端通信
-
-待实现：
-
-* 删除功能
-* 完成状态切换
-* SQLite 持久化
+* 配置 `$HOME\.cargo\config.toml` 使用 Rust 镜像源（中科大/清华）
+* 路径使用双引号包裹或在 PowerShell 中使用反引号转义空格
+* 重新安装 Live Server 扩展，通过右键 "Open with Live Server" 启动
 
 ---
 
-## 2026-07-14 — V4.1 Todo 优先级管理
+## v2.0 — MySQL 持久化
+
+日期：基于 git tag v2.0（在 v1.0 之后完成）
 
 ### 完成内容
 
-* 实现 Todo 优先级功能
-* 后端 priority 字段（INT, DEFAULT 2）
-* 优先级取值 1=高 / 2=中 / 3=低
-* GET /todos 返回 priority
-* POST /todos 创建时支持 priority 参数
-* PUT /todos/:id 更新时支持 priority 参数
-* 前端新增标签式优先级选择器（高/中/低 按钮组）
-* 任务列表显示优先级彩色标签（红/橙/绿）
+* 引入 sqlx 替代内存 Vec 存储，实现 MySQL 数据持久化
+* 后端模块化重构：拆分为 db/（连接池）、models/（结构体）、routes/（路由）三层
+* 添加启动时自动建表（CREATE TABLE IF NOT EXISTS）
+* 添加 .env 环境变量配置与 dotenvy 加载
+* 前端 API 契约保持不变，后端替换对前端透明
+
+### 技术实现
+
+* 依赖：sqlx 0.8（runtime-tokio + mysql + macros），dotenvy 0.15，tower-http 0.6（CORS）
+* 数据库连接：MySqlPoolOptions 最大 5 连接
+* 表结构：id BIGINT UNSIGNED AUTO_INCREMENT，title VARCHAR(255) NOT NULL
+* 模型映射：sqlx::FromRow derive 自动将查询行映射为 Rust 结构体
+
+### 遇到的问题
+
+1. sqlx 的 features 组合需要精确匹配（runtime-tokio + mysql + macros 缺一不可）
+2. MySQL DATABASE_URL 格式容易写错（需含用户名、密码、主机、端口、数据库名）
+
+### 解决方案
+
+* 参考 sqlx 官方文档确认 feature flags 组合
+* 提供 .env.example 模板，复制后只需修改密码
+
+---
+
+## v3.0 — 完成状态管理
+
+日期：基于 git tag v3.0（在 v2.0 之后完成）
+
+### 完成内容
+
+* 数据库新增 completed BOOLEAN 字段（DEFAULT FALSE）
+* 新增 PATCH /todos/:id/toggle 端点，SQL 使用 `SET completed = NOT completed`
+* 前端列表添加"完成 / 取消完成"按钮，点击触发 toggle
+* 已完成任务显示删除线（text-decoration: line-through）和降低透明度（opacity: 0.55）
+* 优化暗色主题配色，统一 card/button/input 样式
+
+### 技术实现
+
+* 后端：toggle handler 执行 UPDATE 后重新 SELECT 返回完整 Todo
+* 前端：renderTodos() 中根据 todo.completed 添加/移除 .completed 类
+* CSS：.todo-item.completed 统一样式管理，不依赖 JavaScript 内联样式
+
+### 遇到的问题
+
+1. MySQL 中 BOOLEAN 实际存储为 TINYINT(1)，sqlx 的 FromRow 自动映射为 Rust bool
+2. 前端 toggle 后需要重新 fetch 列表，存在短暂的状态不一致窗口
+
+### 解决方案
+
+* sqlx 已内置 TINYINT ↔ bool 映射，无需手动转换
+* toggle 成功后立即调用 loadTodos() 刷新列表，保证数据一致性
+
+---
+
+## v4.1 — Todo 优先级管理
+
+日期：2026-07-14
+
+### 完成内容
+
+* 数据库新增 priority INT 字段（DEFAULT 2，取值范围 1-3）
+* 后端 GET/POST/PUT 均支持 priority 字段
+* 优先级验证：is_valid_priority() 拒绝范围外的值（400 BAD_REQUEST）
+* 前端实现标签式优先级选择器（高/中/低 按钮组）
+* 列表显示优先级彩色标签（红色=高，橙色=中，绿色=低）
 * 编辑模式支持修改优先级
 
-### 技术决策
+### 技术实现
 
-* 优先级使用 i32 类型，便于扩展
-* 默认优先级为 2（中）
-* 前端使用标签式按钮组（.priority-group）替代原生下拉框，适配暗色主题
-* 编辑模式使用纵向布局（flex-direction: column），优先级选择器位于输入框上方
-
-### 修改文件
-
-后端：
-* backend/sql/init.sql — 建表 DDL 增加 priority INT NOT NULL DEFAULT 2
-* backend/src/db/mod.rs — 自动建表增加 priority 字段
-* backend/src/models/todo.rs — Todo 增加 priority: i32；CreateTodo 增加 priority: Option<i32>
-* backend/src/routes/todos.rs — 所有 SQL 查询包含 priority；新增 DEFAULT_PRIORITY / is_valid_priority()
-
-前端：
-* frontend/index.html — 增加优先级按钮组（高/中/低）
-* frontend/app.js — 创建/更新/编辑模式支持 priority；事件委托切换选中状态
-* frontend/styles.css — 暗色主题优先级按钮组样式；红/橙/绿三色优先级标签
+* 后端：CreateTodo.priority 为 Option<i32>，未传入时 unwrap_or(2)；PUT 更新使用 COALESCE 保持原值
+* CSS：.priority-option 默认灰色边框，选中态分别着色（data-priority 属性驱动）
+* 编辑模式：li 切换 flex-direction: column，优先级组 + 日期输入 + 标题输入纵向排列
 
 ### 遇到的问题
 
-1. 前端下拉框 `<select>` 在暗色主题下文字不清（白底白字）
-2. 编辑模式需要额外处理优先级，flex 纵向布局适配
+1. 原生 `<select>` 下拉框在暗色主题下白底白字，无法统一风格
+2. 编辑模式需要同时展示优先级选择器和标题编辑，flex 布局初始是横向
 
 ### 解决方案
 
-* 将下拉框改为标签式按钮组，直接控制背景色和文字颜色
-* 编辑模式下 li 切换为 flex-direction: column，行内包一层 div 保持输入框+按钮并排
+* 用 div.priority-group 内三个 span 替代 select，完全控制颜色和交互
+* 编辑模式下 li 动态设为 flex-direction: column，子元素纵向堆叠
 
 ---
 
-## 2026-07-14 — V4.2 搜索/筛选/统计/到期日期
+## v4.2 — 搜索/筛选/统计/到期日期
+
+日期：2026-07-14
 
 ### 完成内容
 
-* 后端新增 due_date 字段（DATE, DEFAULT NULL）
-* Rust Todo 模型增加 due_date: Option<NaiveDate>
-* GET /todos 返回 due_date
-* POST /todos 创建时支持 due_date 参数
-* PUT /todos/:id 更新时支持 due_date 参数（COALESCE 保持原值）
+* 后端新增 due_date DATE 字段（DEFAULT NULL），添加索引
+* Rust Todo 模型增加 due_date: Option<NaiveDate>，使用 chrono crate
+* 所有 API 端点支持 due_date 的读写
 * 前端搜索框实时过滤（标题匹配，大小写不敏感）
-* 前端状态筛选（全部 / 未完成 / 已完成）
+* 前端状态筛选按钮（全部 / 未完成 / 已完成）
 * 前端统计面板（总任务 / 未完成 / 已完成）
-* 列表到期日期显示两行：截止 YYYY-MM-DD + 动态剩余时间
-* 编辑模式支持修改优先级和到期日期
-* 日期输入自动格式化和有效性验证
-* 创建任务日期输入框默认设为今天
+* 列表到期日期两行显示：截止 YYYY-MM-DD + 动态剩余时间
+* 日期输入自动格式化（formatDateInput）和有效性验证（isValidDate）
+* 创建任务时日期输入框默认设为当天
+* 编辑模式支持修改到期日期
 
-### 技术决策
+### 技术实现
 
-* 前端日期输入使用 type="text" + 自动格式化，替代原生 date picker，统一暗色主题风格
-* chrono::NaiveDate 与 MySQL DATE 直接映射，序列化为 "YYYY-MM-DD"
-* 搜索和筛选纯前端实现，不增加后端 API 负担
-* 统计面板在每次 applyFilters() 时根据 allTodos 实时计算
-* PUT 更新使用 COALESCE 保证未传入的字段保持原值不变
-
-### 修改文件
-
-后端：
-* backend/Cargo.toml — 新增 chrono 依赖，sqlx 启用 chrono feature
-* backend/sql/init.sql — 建表 DDL 增加 due_date DATE DEFAULT NULL，INDEX idx_due_date
-* backend/src/db/mod.rs — 自动建表增加 due_date 字段
-* backend/src/models/todo.rs — Todo 增加 due_date: Option<NaiveDate>；CreateTodo 增加 due_date: Option<NaiveDate>
-* backend/src/routes/todos.rs — 所有 SQL 查询包含 due_date；PUT 改用 COALESCE 统一处理
-
-前端：
-* frontend/index.html — 增加截止日期输入、搜索框、筛选按钮、统计面板
-* frontend/app.js — 搜索/筛选/统计/日期创建/编辑/显示/格式化/验证
-* frontend/styles.css — 暗色主题搜索框/筛选按钮/日期输入/到期标签/统计面板样式
+* 后端：chrono::NaiveDate 与 MySQL DATE 直接映射，序列化为 "YYYY-MM-DD"；PUT 使用 COALESCE(?, due_date) 保持未传字段原值
+* 前端：allTodos 数组缓存全量数据，applyFilters() 组合筛选+搜索，renderTodos() 渲染过滤结果
+* 日期输入：type="text" + 正则替换自动插入连字符（20260801 → 2026-08-01），isValidDate 验证真实日期
+* 统计面板：在 applyFilters() 中根据 allTodos 实时计算总数/未完成/已完成
+* 搜索和筛选均为纯前端实现，不增加后端 API 调用
 
 ### 遇到的问题
 
-1. HTML 被意外覆盖，丢失了搜索/筛选/日期输入部分
-2. 编辑模式日期输入需要与 create 模式样式一致
-3. 日期输入从 type="date" 改为 type="text" 后需要手动格式化
+1. index.html 在多次迭代中被意外覆盖，丢失搜索/筛选/日期输入部分的 DOM 结构
+2. 编辑模式动态创建的日期输入框需要与创建模式的样式完全一致
+3. 日期输入从 type="date" 改为 type="text" 后，失去了平台原生的日期选择器和自动校验
 
 ### 解决方案
 
-* 根据 app.js 和 styles.css 的完整代码重建 index.html
-* 编辑模式使用相同的 .due-date-input 类 + edit-date-input 调整边距
-* 实现 formatDateInput() 自动插入连字符，isValidDate() 验证日期有效性
+* 根据 app.js 中 JS 引用的所有 id/class，对照 styles.css 的样式定义，重建完整的 index.html
+* 编辑模式使用相同的 .due-date-input 类，额外添加 .edit-date-input 仅调整 margin-top
+* 实现 formatDateInput() 函数用正则自动插入连字符，isValidDate() 函数校验年/月/日值的合法性
