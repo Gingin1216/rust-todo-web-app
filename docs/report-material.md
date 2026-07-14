@@ -78,22 +78,28 @@ Todo 数据（Vec / 数据库）
 ## 四、项目结构
 
 ```text
-todo-project/
-│
+to do list/
 ├── frontend/
 │   ├── index.html
 │   ├── styles.css
 │   └── app.js
-│
 ├── backend/
+│   ├── .env
+│   ├── .env.example
 │   ├── Cargo.toml
+│   ├── sql/
+│   │   └── init.sql
 │   └── src/
 │       ├── main.rs
+│       ├── db/
+│       │   └── mod.rs
+│       ├── models/
+│       │   ├── mod.rs
+│       │   └── todo.rs
 │       └── routes/
 │           ├── mod.rs
 │           └── todos.rs
-│
-└── README.md
+└── docs/
 ```
 
 ---
@@ -199,6 +205,30 @@ Todo 业务逻辑文件。
 
 ---
 
+### backend/src/db/mod.rs
+
+数据库连接与初始化模块。
+
+主要负责：
+
+* 从 DATABASE_URL 创建 MySQL 连接池
+* 启动时自动创建 todos 表（CREATE TABLE IF NOT EXISTS）
+
+---
+
+### backend/src/models/todo.rs
+
+数据模型定义文件。
+
+主要负责：
+
+* 定义 Todo 结构体（与数据库表字段一一对应）
+* 定义 CreateTodo 请求体结构体
+* 使用 serde 实现 JSON 序列化/反序列化
+* 使用 sqlx::FromRow 实现数据库行映射
+
+---
+
 ## 六、核心功能实现
 
 ### 1. Todo 加载流程
@@ -256,6 +286,7 @@ Todo 业务逻辑文件。
 | POST   | /todos     | 创建 Todo    |
 | PUT    | /todos/:id | 更新 Todo    |
 | DELETE | /todos/:id | 删除 Todo    |
+| PATCH  | /todos/:id/toggle | 切换完成状态 |
 
 ---
 
@@ -350,8 +381,46 @@ priority: Option<String>
 新增状态更新接口：
 
 ```text
-PATCH /todos/:id/status
+PATCH /todos/:id/toggle
 ```
+
+---
+
+## V4.1 — Todo 优先级管理
+
+### 新增字段
+
+```rust
+priority: i32      // 1=高, 2=中, 3=低, DEFAULT 2
+```
+
+### 实现内容
+
+* 数据库新增 priority 字段
+* 前端标签式优先级选择器（暗色主题按钮组）
+* 列表显示优先级颜色标签（红/橙/绿）
+* 编辑模式支持修改优先级
+
+---
+
+## V4.2 — 搜索/筛选/统计/到期日期
+
+### 新增字段
+
+```rust
+due_date: Option<NaiveDate>   // MySQL DATE, DEFAULT NULL
+```
+
+### 实现内容
+
+* 后端 due_date 字段（chrono::NaiveDate）
+* 前端截止日期输入（type="text" + 自动格式化 YYYY-MM-DD）
+* 搜索框实时过滤（标题匹配，大小写不敏感）
+* 状态筛选（全部 / 未完成 / 已完成）
+* 统计面板（总任务 / 未完成 / 已完成）
+* 列表到期日期两行显示：截止 YYYY-MM-DD + 动态剩余时间
+* 日期输入自动格式化和有效性验证
+* COALESCE 更新策略：未传字段保持原值不变
 
 ---
 
