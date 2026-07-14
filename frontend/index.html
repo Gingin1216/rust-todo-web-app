@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
@@ -12,22 +12,38 @@
       <header class="header">
         <h1>Todo</h1>
         <p class="subtitle">连接后端 API · 127.0.0.1:3000</p>
+        <div class="stats">
+          <span>总任务 <strong id="stat-total">0</strong></span>
+          <span class="stat-sep">·</span>
+          <span>未完成 <strong id="stat-active">0</strong></span>
+          <span class="stat-sep">·</span>
+          <span>已完成 <strong id="stat-completed">0</strong></span>
+        </div>
       </header>
 
-      <form id="add-form" class="composer" autocomplete="off">
-        <input
-          id="title-input"
-          type="text"
-          placeholder="输入待办内容，按 Enter 添加…"
-          maxlength="200"
-          required
-        />
-        <button type="submit">添加</button>
-      </form>
+      <div class="composer">
+        <input id="todo-input" type="text" placeholder="输入待办内容，按 Enter 添加…" maxlength="200" />
+        <button id="add-todo" type="button">添加</button>
+      </div>
+
       <div class="priority-group" id="priority-group">
         <span class="priority-option" data-priority="1">高</span>
         <span class="priority-option selected" data-priority="2">中</span>
         <span class="priority-option" data-priority="3">低</span>
+      </div>
+
+      <div class="due-date-field">
+        <label class="field-label" for="todo-due-date">截止日期</label>
+        <input type="text" id="todo-due-date" class="due-date-input" placeholder="YYYY-MM-DD" maxlength="10" />
+      </div>
+
+      <div class="toolbar">
+        <input id="search-input" type="text" class="search-input" placeholder="搜索任务..." />
+        <div class="filter-group" id="filter-group">
+          <span class="filter-btn active" data-filter="all">全部</span>
+          <span class="filter-btn" data-filter="active">未完成</span>
+          <span class="filter-btn" data-filter="completed">已完成</span>
+        </div>
       </div>
 
       <section class="panel">

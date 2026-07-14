@@ -22,8 +22,9 @@ pub async fn init_schema(pool: &MySqlPool) -> Result<(), sqlx::Error> {
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
             title VARCHAR(255) NOT NULL,
             completed BOOLEAN NOT NULL DEFAULT FALSE,
-            priority INT NOT NULL DEFAULT 2,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    priority INT NOT NULL DEFAULT 2,
+            due_date DATE DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB
         "#,
     )

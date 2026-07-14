@@ -57,6 +57,24 @@ body {
   color: var(--muted);
 }
 
+.stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.stats strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.stat-sep {
+  color: #555;
+}
+
 .composer {
   display: flex;
   gap: 10px;
@@ -193,6 +211,144 @@ body {
   color: #6bcb77;
 }
 
+/* 搜索与筛选工具栏 */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-input::placeholder {
+  color: var(--muted);
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+
+.filter-group {
+  display: flex;
+  gap: 6px;
+}
+
+.filter-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 0;
+  border: 1px solid #555;
+  border-radius: 6px;
+  background: transparent;
+  color: #aaa;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.filter-btn:hover {
+  border-color: #888;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ddd;
+}
+
+.filter-btn.active {
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--accent-hover);
+  border-width: 1.5px;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 截止日期输入 */
+.due-date-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.field-label {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.due-date-input {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 0.85rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  color-scheme: dark;
+}
+
+.due-date-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+
+.edit-date-input {
+  margin-top: 0;
+}
+
+/* 列表中的到期日期显示 */
+.todo-due-wrapper {
+  margin-top: 4px;
+}
+
+.todo-due-label {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.todo-due-status {
+  display: block;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.todo-due-status.overdue {
+  color: #ff6b6b;
+}
+
+.todo-due-status.soon {
+  color: #ffd93d;
+}
+
+.todo-due-status.safe {
+  color: #6bcb77;
+}
+
 .composer button:hover {
   background: var(--accent-hover);
 }
@@ -269,9 +425,12 @@ body {
 }
 
 .todo-title {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   font-size: 0.95rem;
   word-break: break-word;
+  gap: 4px;
 }
 
 .todo-item.completed {
@@ -279,6 +438,8 @@ body {
 }
 
 .todo-item.completed .todo-title {
+  display: flex;
+  flex-direction: column;
   text-decoration: line-through;
   color: var(--muted);
 }

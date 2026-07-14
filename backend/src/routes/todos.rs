@@ -25,7 +25,7 @@ pub fn router() -> Router<MySqlPool> {
 // GET /todos — 查询全部
 async fn get_todos(State(pool): State<MySqlPool>) -> Result<Json<Vec<Todo>>, StatusCode> {
     let todos = sqlx::query_as::<_, Todo>(
-        "SELECT id, title, completed, priority FROM todos ORDER BY id ASC",
+        "SELECT id, title, completed, priority, due_date FROM todos ORDER BY id ASC",
     )
     .fetch_all(&pool)
     .await
@@ -44,9 +44,10 @@ async fn create_todo(
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    let result = sqlx::query("INSERT INTO todos (title, priority) VALUES (?, ?)")
+    let result = sqlx::query("INSERT INTO todos (title, priority, due_date) VALUES (?, ?, ?)")
         .bind(&payload.title)
         .bind(priority)
+        .bind(payload.due_date)
         .execute(&pool)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -56,6 +57,7 @@ async fn create_todo(
         title: payload.title,
         completed: false,
         priority,
+        due_date: payload.due_date,
     };
 
     Ok((StatusCode::CREATED, Json(todo)))
@@ -67,37 +69,31 @@ async fn update_todo(
     State(pool): State<MySqlPool>,
     Json(payload): Json<CreateTodo>,
 ) -> Result<(StatusCode, Json<Todo>), StatusCode> {
-    if let Some(priority) = payload.priority {
-        if !is_valid_priority(priority) {
+    // 验证 priority（若传入）
+    if let Some(p) = payload.priority {
+        if !is_valid_priority(p) {
             return Err(StatusCode::BAD_REQUEST);
-        }
-
-        let result = sqlx::query("UPDATE todos SET title = ?, priority = ? WHERE id = ?")
-            .bind(&payload.title)
-            .bind(priority)
-            .bind(id)
-            .execute(&pool)
-            .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-        if result.rows_affected() == 0 {
-            return Err(StatusCode::NOT_FOUND);
-        }
-    } else {
-        let result = sqlx::query("UPDATE todos SET title = ? WHERE id = ?")
-            .bind(&payload.title)
-            .bind(id)
-            .execute(&pool)
-            .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-        if result.rows_affected() == 0 {
-            return Err(StatusCode::NOT_FOUND);
         }
     }
 
+    // COALESCE 保证未传入的字段保持原值不变
+    let result = sqlx::query(
+        "UPDATE todos SET title = ?, priority = COALESCE(?, priority), due_date = COALESCE(?, due_date) WHERE id = ?"
+    )
+    .bind(&payload.title)
+    .bind(payload.priority)
+    .bind(payload.due_date)
+    .bind(id)
+    .execute(&pool)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    if result.rows_affected() == 0 {
+        return Err(StatusCode::NOT_FOUND);
+    }
+
     let todo = sqlx::query_as::<_, Todo>(
-        "SELECT id, title, completed, priority FROM todos WHERE id = ?",
+        "SELECT id, title, completed, priority, due_date FROM todos WHERE id = ?",
     )
     .bind(id)
     .fetch_one(&pool)
@@ -123,7 +119,7 @@ async fn toggle_todo(
     }
 
     let todo = sqlx::query_as::<_, Todo>(
-        "SELECT id, title, completed, priority FROM todos WHERE id = ?",
+        "SELECT id, title, completed, priority, due_date FROM todos WHERE id = ?",
     )
     .bind(id)
     .fetch_one(&pool)

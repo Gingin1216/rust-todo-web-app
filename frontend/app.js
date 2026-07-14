@@ -1,12 +1,17 @@
 // 后端 API 地址（与 axum 服务一致）
 const API_BASE = "http://127.0.0.1:3000";
 
-const addForm = document.getElementById("add-form");
-const titleInput = document.getElementById("title-input");
+const todoInput = document.getElementById("todo-input");
+const addBtn = document.getElementById("add-todo");
 const todoList = document.getElementById("todo-list");
 const todoCount = document.getElementById("todo-count");
 const statusEl = document.getElementById("status");
 const emptyState = document.getElementById("empty-state");
+
+// 搜索与筛选状态
+let allTodos = [];
+let currentFilter = "all";
+let searchQuery = "";
 
 function setStatus(message, isError = false) {
   statusEl.textContent = message;
@@ -34,28 +39,29 @@ async function request(path, options = {}) {
 async function loadTodos() {
   setStatus("加载中…");
   try {
-    const todos = await request("/todos");
-    renderTodos(todos);
+    allTodos = await request("/todos");
+    applyFilters();
     setStatus("");
   } catch (err) {
     setStatus(`无法连接后端，请先运行 cargo run：${err.message}`, true);
-    renderTodos([]);
+    allTodos = [];
+    applyFilters();
   }
 }
 
 // POST /todos
-async function addTodo(title, priority) {
+async function addTodo(title, priority, dueDate) {
   await request("/todos", {
     method: "POST",
-    body: JSON.stringify({ title, priority }),
+    body: JSON.stringify({ title, priority, due_date: dueDate || null }),
   });
 }
 
 // PUT /todos/:id
-async function updateTodo(id, title, priority) {
+async function updateTodo(id, title, priority, dueDate) {
   await request(`/todos/${id}`, {
     method: "PUT",
-    body: JSON.stringify({ title, priority }),
+    body: JSON.stringify({ title, priority, due_date: dueDate || null }),
   });
 }
 
@@ -69,10 +75,68 @@ async function toggleTodo(id) {
   await request(`/todos/${id}/toggle`, { method: "PATCH" });
 }
 
+// 计算距离到期日的天数（正=剩余，负=已逾期）
+function daysUntil(dateStr) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(dateStr + "T00:00:00");
+  return Math.round((target - today) / (1000 * 60 * 60 * 24));
+}
+
+// 日期输入自动格式化：键入数字时自动插入连字符
+function formatDateInput(input) {
+  let digits = input.value.replace(/\D/g, "");
+  if (digits.length > 4) {
+    digits = digits.slice(0, 4) + "-" + digits.slice(4);
+  }
+  if (digits.length > 7) {
+    digits = digits.slice(0, 7) + "-" + digits.slice(7);
+  }
+  input.value = digits.slice(0, 10);
+}
+
+// 验证日期字符串是否为有效 YYYY-MM-DD
+function isValidDate(dateStr) {
+  const m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return false;
+  const y = parseInt(m[1], 10), mo = parseInt(m[2], 10) - 1, d = parseInt(m[3], 10);
+  const dt = new Date(y, mo, d);
+  return dt.getFullYear() === y && dt.getMonth() === mo && dt.getDate() === d;
+}
+
+// 筛选与搜索过滤
+function applyFilters() {
+  let filtered = allTodos;
+
+  // 更新统计面板
+  document.getElementById("stat-total").textContent = allTodos.length;
+  document.getElementById("stat-active").textContent = allTodos.filter(t => !t.completed).length;
+  document.getElementById("stat-completed").textContent = allTodos.filter(t => t.completed).length;
+
+  if (currentFilter === "active") {
+    filtered = filtered.filter(t => !t.completed);
+  } else if (currentFilter === "completed") {
+    filtered = filtered.filter(t => t.completed);
+  }
+
+  if (searchQuery.trim()) {
+    const q = searchQuery.trim().toLowerCase();
+    filtered = filtered.filter(t => t.title.toLowerCase().includes(q));
+  }
+
+  renderTodos(filtered);
+}
+
 function renderTodos(todos) {
   todoList.innerHTML = "";
   todoCount.textContent = String(todos.length);
   emptyState.classList.toggle("hidden", todos.length > 0);
+  // 更新空状态提示文字
+  if (todos.length === 0 && allTodos.length > 0) {
+    emptyState.textContent = "没有匹配的任务";
+  } else {
+    emptyState.textContent = "暂无任务";
+  }
 
   todos.forEach((todo) => {
     const li = document.createElement("li");
@@ -82,17 +146,55 @@ function renderTodos(todos) {
     const titleSpan = document.createElement("span");
     titleSpan.className = "todo-title";
 
+    // 标题行：优先级标签 + 标题文字
+    const titleRow = document.createElement("div");
+    titleRow.className = "title-row";
+
     // 优先级标签
     const priorityMap = { 1: "高", 2: "中", 3: "低" };
     const priorityBadge = document.createElement("span");
     priorityBadge.className = `priority-badge priority-${todo.priority}`;
     priorityBadge.textContent = priorityMap[todo.priority] || "";
 
-    titleSpan.appendChild(priorityBadge);
+    titleRow.appendChild(priorityBadge);
     // 标题文字
     const titleText = document.createElement("span");
     titleText.textContent = todo.title;
-    titleSpan.appendChild(titleText);
+    titleRow.appendChild(titleText);
+
+    titleSpan.appendChild(titleRow);
+
+    // 到期日期显示
+    if (todo.due_date) {
+      const dueWrapper = document.createElement("div");
+      dueWrapper.className = "todo-due-wrapper";
+
+      // 日期行：截止 YYYY-MM-DD
+      const dueLabel = document.createElement("span");
+      dueLabel.className = "todo-due-label";
+      dueLabel.textContent = `截止 ${todo.due_date}`;
+      dueWrapper.appendChild(dueLabel);
+
+      // 状态行：动态剩余时间
+      const days = daysUntil(todo.due_date);
+      const dueStatus = document.createElement("span");
+      dueStatus.className = "todo-due-status";
+      if (days < 0) {
+        dueStatus.classList.add("overdue");
+        dueStatus.textContent = `已逾期 ${Math.abs(days)} 天`;
+      } else if (days === 0) {
+        dueStatus.classList.add("soon");
+        dueStatus.textContent = "今天截止";
+      } else if (days === 1) {
+        dueStatus.classList.add("soon");
+        dueStatus.textContent = "明天截止";
+      } else {
+        dueStatus.classList.add("safe");
+        dueStatus.textContent = `剩余 ${days} 天`;
+      }
+      dueWrapper.appendChild(dueStatus);
+      titleSpan.appendChild(dueWrapper);
+    }
 
     const actions = document.createElement("div");
     actions.className = "todo-actions";
@@ -184,7 +286,18 @@ function startEdit(li, todo) {
   editRow.style.alignItems = "center";
   editRow.append(input, actions);
 
-  li.replaceChildren(priorityGroup, editRow);
+  // 截止日期输入
+  const dateInput = document.createElement("input");
+  dateInput.type = "text";
+  dateInput.className = "due-date-input edit-date-input";
+  dateInput.placeholder = "YYYY-MM-DD";
+  dateInput.maxLength = 10;
+  // 后端已返回 YYYY-MM-DD 格式，直接赋值；无日期则为空
+  dateInput.value = todo.due_date || "";
+  // 自动格式化
+  dateInput.addEventListener("input", function () { formatDateInput(this); });
+
+  li.replaceChildren(priorityGroup, dateInput, editRow);
 
   const finish = () => loadTodos();
 
@@ -196,7 +309,8 @@ function startEdit(li, todo) {
     }
     try {
       const newPriority = parseInt(priorityGroup.querySelector(".selected").dataset.priority, 10);
-      await updateTodo(todo.id, title, newPriority);
+      const newDueDate = dateInput.value || null;
+      await updateTodo(todo.id, title, newPriority, newDueDate);
       await finish();
     } catch (err) {
       setStatus(err.message, true);
@@ -207,20 +321,30 @@ function startEdit(li, todo) {
   input.focus();
 }
 
-addForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const title = titleInput.value.trim();
+// 添加任务：按钮点击
+addBtn.addEventListener("click", () => handleAddTodo());
+// 添加任务：回车键
+todoInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") handleAddTodo();
+});
+
+function handleAddTodo() {
+  const title = todoInput.value.trim();
   if (!title) return;
 
-  try {
-    const priority = parseInt(document.querySelector("#priority-group .selected").dataset.priority, 10);
-    await addTodo(title, priority);
-    titleInput.value = "";
-    await loadTodos();
-  } catch (err) {
-    setStatus(err.message, true);
+  const priority = parseInt(document.querySelector("#priority-group .selected").dataset.priority, 10);
+  const dueDateValue = document.getElementById("todo-due-date").value;
+  const dueDate = dueDateValue || null;
+  // 有输入时验证格式
+  if (dueDate && !isValidDate(dueDate)) {
+    setStatus("日期格式无效，请使用 YYYY-MM-DD", true);
+    return;
   }
-});
+  todoInput.value = "";
+  addTodo(title, priority, dueDate)
+    .then(() => loadTodos())
+    .catch((err) => setStatus(err.message, true));
+}
 
 // 创建表单优先级按钮点击切换
 document.getElementById("priority-group").addEventListener("click", (e) => {
@@ -230,4 +354,35 @@ document.getElementById("priority-group").addEventListener("click", (e) => {
   target.classList.add("selected");
 });
 
+// 搜索输入实时过滤
+document.getElementById("search-input").addEventListener("input", (e) => {
+  searchQuery = e.target.value;
+  applyFilters();
+});
+
+// 筛选按钮切换
+document.getElementById("filter-group").addEventListener("click", (e) => {
+  const btn = e.target.closest(".filter-btn");
+  if (!btn) return;
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  currentFilter = btn.dataset.filter;
+  applyFilters();
+});
+
 loadTodos();
+
+// 截止日期输入框默认设为今天
+const dueDateInput = document.getElementById("todo-due-date");
+if (dueDateInput) {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  dueDateInput.value = `${yyyy}-${mm}-${dd}`;
+}
+
+// 创建表单日期输入自动格式化
+document.getElementById("todo-due-date").addEventListener("input", function () {
+  formatDateInput(this);
+});
