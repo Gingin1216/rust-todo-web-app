@@ -12,6 +12,7 @@ const emptyState = document.getElementById("empty-state");
 let allTodos = [];
 let currentFilter = "all";
 let searchQuery = "";
+let currentSort = "default";
 
 function setStatus(message, isError = false) {
   statusEl.textContent = message;
@@ -122,6 +123,20 @@ function applyFilters() {
   if (searchQuery.trim()) {
     const q = searchQuery.trim().toLowerCase();
     filtered = filtered.filter(t => t.title.toLowerCase().includes(q));
+  }
+
+  // 排序
+  if (currentSort === "priority") {
+    filtered.sort((a, b) => a.priority - b.priority);
+  } else if (currentSort === "due_date") {
+    filtered.sort((a, b) => {
+      if (!a.due_date && !b.due_date) return 0;
+      if (!a.due_date) return 1;
+      if (!b.due_date) return -1;
+      return a.due_date.localeCompare(b.due_date);
+    });
+  } else if (currentSort === "completed") {
+    filtered.sort((a, b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1));
   }
 
   renderTodos(filtered);
@@ -402,4 +417,81 @@ if (dueDateInput) {
 // 创建表单日期输入自动格式化
 document.getElementById("todo-due-date").addEventListener("input", function () {
   formatDateInput(this);
+});
+
+// === 导出功能 ===
+function exportJSON() {
+  const data = JSON.stringify(allTodos, null, 2);
+  const blob = new Blob([data], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `todos-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportCSV() {
+  const escape = (v) => {
+    const s = String(v ?? "");
+    return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const statusMap = { true: "已完成", false: "未完成" };
+  const priorityMap = { 1: "高", 2: "中", 3: "低" };
+  const headers = ["title", "status", "priority", "due_date"];
+  const rows = allTodos.map((t) => [
+    escape(t.title),
+    statusMap[t.completed],
+    priorityMap[t.priority] || "",
+    escape(t.due_date ?? ""),
+  ].join(","));
+  const csv = "\uFEFF" + headers.join(",") + "\n" + rows.join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `todos-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// === 下拉菜单通用逻辑 ===
+function setupDropdown(containerId, onSelect) {
+  const container = document.getElementById(containerId);
+  const btn = container.querySelector(".dropdown-btn");
+  const menu = container.querySelector(".dropdown-menu");
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    document.querySelectorAll(".dropdown-menu.open").forEach(m => {
+      if (m !== menu) m.classList.remove("open");
+    });
+    menu.classList.toggle("open");
+  });
+
+  menu.addEventListener("click", (e) => {
+    const item = e.target.closest(".dropdown-item");
+    if (!item) return;
+    menu.querySelectorAll(".dropdown-item").forEach(i => i.classList.remove("active"));
+    item.classList.add("active");
+    menu.classList.remove("open");
+    onSelect(item);
+  });
+}
+
+// 点击其他区域关闭所有下拉菜单
+document.addEventListener("click", () => {
+  document.querySelectorAll(".dropdown-menu.open").forEach(m => m.classList.remove("open"));
+});
+
+// 导出下拉菜单
+setupDropdown("export-dropdown", (item) => {
+  if (item.dataset.type === "json") exportJSON();
+  else if (item.dataset.type === "csv") exportCSV();
+});
+
+// 排序下拉菜单
+setupDropdown("sort-dropdown", (item) => {
+  currentSort = item.dataset.sort;
+  applyFilters();
 });
