@@ -16,6 +16,21 @@
   --danger-hover: #ef4444;
   --radius: 14px;
   --shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  --surface-elevated: #252535;
+  --border-subtle: #555;
+  --text-subtle: #aaa;
+  --hover-bg: rgba(255, 255, 255, 0.04);
+  --hover-border: #888;
+  --hover-text: #ddd;
+  --edit-bg: rgba(0, 0, 0, 0.2);
+  --badge-bg: rgba(99, 102, 241, 0.25);
+  --badge-text: #c7d2fe;
+  --stat-sep-color: #555;
+  --btn-hover-border: rgba(255, 255, 255, 0.2);
+  --btn-hover-bg: rgba(255, 255, 255, 0.05);
+  --color-scheme: dark;
+  --bg-gradient-accent: rgba(99, 102, 241, 0.35);
+  --bg-gradient-secondary: rgba(168, 85, 247, 0.2);
 }
 
 body {
@@ -30,8 +45,8 @@ body {
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.35), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(168, 85, 247, 0.2), transparent),
+    radial-gradient(ellipse 80% 50% at 50% -20%, var(--bg-gradient-accent), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 100%, var(--bg-gradient-secondary), transparent),
     var(--bg);
 }
 
@@ -39,6 +54,12 @@ body {
   max-width: 560px;
   margin: 0 auto;
   padding: 48px 20px 64px;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .header {
@@ -72,7 +93,7 @@ body {
 }
 
 .stat-sep {
-  color: #555;
+  color: var(--stat-sep-color);
 }
 
 .composer {
@@ -120,7 +141,7 @@ body {
   gap: 6px;
   padding: 8px;
   margin-top: 8px;
-  background: #252535;
+  background: var(--surface-elevated);
   border-radius: 8px;
 }
 
@@ -130,10 +151,10 @@ body {
   align-items: center;
   justify-content: center;
   padding: 8px 0;
-  border: 1px solid #555;
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
   background: transparent;
-  color: #aaa;
+  color: var(--text-subtle);
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
@@ -142,9 +163,9 @@ body {
 }
 
 .priority-option:hover {
-  border-color: #888;
-  background: rgba(255, 255, 255, 0.05);
-  color: #ddd;
+  border-color: var(--hover-border);
+  background: var(--hover-bg);
+  color: var(--hover-text);
 }
 
 .priority-option.selected {
@@ -251,10 +272,10 @@ body {
   align-items: center;
   justify-content: center;
   padding: 7px 0;
-  border: 1px solid #555;
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
   background: transparent;
-  color: #aaa;
+  color: var(--text-subtle);
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
@@ -263,9 +284,9 @@ body {
 }
 
 .filter-btn:hover {
-  border-color: #888;
-  background: rgba(255, 255, 255, 0.05);
-  color: #ddd;
+  border-color: var(--hover-border);
+  background: var(--hover-bg);
+  color: var(--hover-text);
 }
 
 .filter-btn.active {
@@ -307,7 +328,7 @@ body {
   outline: none;
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s;
-  color-scheme: dark;
+  color-scheme: var(--color-scheme);
 }
 
 .due-date-input:focus {
@@ -386,8 +407,8 @@ body {
   height: 28px;
   padding: 0 8px;
   border-radius: 999px;
-  background: rgba(99, 102, 241, 0.25);
-  color: #c7d2fe;
+  background: var(--badge-bg);
+  color: var(--badge-text);
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -417,7 +438,7 @@ body {
 }
 
 .todo-item:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--hover-bg);
 }
 
 .todo-item + .todo-item {
@@ -463,8 +484,8 @@ body {
 
 .todo-actions button:hover {
   color: var(--text);
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--btn-hover-border);
+  background: var(--btn-hover-bg);
 }
 
 .todo-actions .btn-delete:hover {
@@ -477,7 +498,7 @@ body {
   padding: 8px 10px;
   border: 1px solid var(--accent);
   border-radius: 8px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--edit-bg);
   color: var(--text);
   font-size: 0.95rem;
   outline: none;
@@ -502,4 +523,58 @@ body {
   .composer button {
     padding: 14px;
   }
+}
+ [data-theme="light"] {
+   --bg: #f0f4f8;
+   --card: rgba(255, 255, 255, 0.75);
+   --card-border: rgba(0, 0, 0, 0.08);
+   --text: #1e293b;
+   --muted: #64748b;
+   --accent: #6366f1;
+   --accent-hover: #4f46e5;
+   --danger: #dc2626;
+   --danger-hover: #b91c1c;
+   --radius: 14px;
+   --shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+   --surface-elevated: #e2e8f0;
+   --border-subtle: #cbd5e1;
+   --text-subtle: #64748b;
+   --hover-bg: rgba(0, 0, 0, 0.04);
+   --hover-border: #94a3b8;
+   --hover-text: #334155;
+   --edit-bg: rgba(255, 255, 255, 0.9);
+   --badge-bg: rgba(99, 102, 241, 0.12);
+   --badge-text: #4f46e5;
+   --stat-sep-color: #cbd5e1;
+   --btn-hover-border: rgba(0, 0, 0, 0.15);
+   --btn-hover-bg: rgba(0, 0, 0, 0.04);
+  --color-scheme: light;
+  --bg-gradient-accent: rgba(99, 102, 241, 0.12);
+  --bg-gradient-secondary: rgba(168, 85, 247, 0.06);
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--surface-elevated);
+  color: var(--text);
+  font-size: 1.15rem;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  background: var(--badge-bg);
+}
+
+.theme-toggle:active {
+  transform: scale(0.92);
 }

@@ -370,6 +370,23 @@ document.getElementById("filter-group").addEventListener("click", (e) => {
   applyFilters();
 });
 
+// === 主题切换逻辑 ===
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  const btn = document.getElementById("theme-toggle");
+  btn.textContent = theme === "dark" ? "🌙" : "☀️";
+}
+
+const savedTheme = localStorage.getItem("theme") || "dark";
+applyTheme(savedTheme);
+
+document.getElementById("theme-toggle").addEventListener("click", () => {
+  const current = document.documentElement.getAttribute("data-theme") || "dark";
+  const next = current === "dark" ? "light" : "dark";
+  applyTheme(next);
+  localStorage.setItem("theme", next);
+});
+
 loadTodos();
 
 // 截止日期输入框默认设为今天
