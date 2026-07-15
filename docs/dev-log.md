@@ -261,3 +261,27 @@
 * sessionStorage 读写全部包裹 try-catch 异常保护
 * 异步处理：await Notification.requestPermission() 等待用户授权
 * 所有后端/HTML/CSS 零改动，仅修改 frontend/app.js
+
+## 2026-07-15 Reminder 系统优化
+
+### 修复内容
+- 修复智能提醒重复显示问题。
+- 同一任务同时满足多个提醒条件时（例如：已延期 + 高优先级），不再生成多条重复提醒。
+
+### 实现方式
+- 在 reminders 模块生成提醒后增加合并处理逻辑。
+- 根据 todo_id 对提醒进行去重。
+- 保留最高优先级提醒等级，并合并多个提醒原因。
+
+### 优化效果
+修复前：
+- 一个任务可能显示：
+  - "任务 xxx 已延期"
+  - "高优先级任务 xxx 未完成"
+
+修复后：
+- 合并为：
+  - "任务 xxx 已延期，且为高优先级任务"
+
+### 涉及文件
+- backend/src/reminders/mod.rs

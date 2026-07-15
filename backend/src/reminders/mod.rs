@@ -33,7 +33,7 @@ pub async fn generate_reminders(pool: &MySqlPool) -> Result<Vec<Reminder>, sqlx:
         ReminderLevel::Info => 2,
     });
 
-    Ok(reminders)
+    Ok(merge_reminders(reminders))
 }
 
 /// 检查截止日期提醒：已过期 / 今天到期
@@ -102,5 +102,35 @@ fn check_stale(todo: &Todo) -> Option<Reminder> {
         })
     } else {
         None
+    }
+}
+
+/// 按 todo_id 合并提醒：保留最高 severity 的提醒，合并次要提醒的消息
+fn merge_reminders(reminders: Vec<Reminder>) -> Vec<Reminder> {
+    let mut merged: Vec<Reminder> = Vec::new();
+    for r in reminders {
+        match merged.iter_mut().find(|m| m.todo_id == r.todo_id) {
+            Some(existing) => {
+                existing.message = merge_message(&existing.message, &r.reminder_type, &r.message);
+                // 仅当主提醒无 days 时才使用次要提醒的 days（避免 overdue 的 days 被覆盖）
+                if r.days.is_some() && existing.days.is_none() {
+                    existing.days = r.days;
+                }
+            }
+            None => merged.push(r),
+        }
+    }
+    merged
+}
+
+/// 将次要提醒消息的关键原因合并到主提醒消息中
+/// 根据 reminder_type 判断提醒类型，不依赖中文文本解析
+fn merge_message(main: &str, secondary_type: &str, _secondary_msg: &str) -> String {
+    match secondary_type {
+        "high_priority" => format!("{}，且为高优先级任务", main.trim_end_matches('。')),
+        "stale" => format!("{}，已等待超过7天", main.trim_end_matches('。')),
+        "due_today" => format!("{}，且今天截止", main.trim_end_matches('。')),
+        // overdue 具有最高优先级，正常情况下不会作为 secondary 出现
+        _ => format!("{}；{}", main, _secondary_msg),
     }
 }
