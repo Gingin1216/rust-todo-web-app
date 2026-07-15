@@ -53,6 +53,13 @@
 * 任务统计面板
 * 到期日期管理
 * 日期自动格式化和验证
+* 任务排序（默认/优先级/截止日期/完成状态）
+* 深色/浅色主题切换
+* JSON/CSV 数据导出
+* 智能提醒系统（后端规则引擎）
+* 前端提醒面板（danger/warning/info 分级）
+* 浏览器系统通知（Notification API）
+* 下拉菜单 UI（导出选项/排序选项）
 * Git 版本管理
 
 ---
@@ -77,10 +84,14 @@ to do list/
 │       │   └── mod.rs
 │       ├── models/
 │       │   ├── mod.rs
-│       │   └── todo.rs
+│       │   ├── todo.rs
+│       │   └── reminder.rs
+│       ├── reminders/
+│       │   └── mod.rs
 │       └── routes/
 │           ├── mod.rs
-│           └── todos.rs
+│           ├── todos.rs
+│           └── reminders.rs
 └── docs/
 ```
 
@@ -144,7 +155,7 @@ cargo run
 运行成功后：
 
 ```text
-Todo API V4.2 running at http://127.0.0.1:3000
+Todo API V2 (MySQL) running at http://127.0.0.1:3000
 ```
 
 ---
@@ -228,6 +239,14 @@ curl -X PUT http://127.0.0.1:3000/todos/1 ^
 * 搜索框根据标题实时过滤任务
 * 筛选按钮切换：全部 / 未完成 / 已完成
 
+### 获取智能提醒
+
+```bash
+curl http://127.0.0.1:3000/api/reminders
+```
+
+返回所有未完成任务的智能提醒，按严重程度排序（danger → warning → info）。
+
 ### 删除 Todo
 
 ```bash
@@ -251,6 +270,10 @@ curl -X PATCH http://127.0.0.1:3000/todos/1/toggle
 | v3.0  | —         | 完成状态管理：completed 字段、PATCH toggle 端点、前端状态展示 |
 | v4.1  | 2026-07-14 | 优先级管理：priority 字段、标签式选择器（红/橙/绿）、暗色主题适配 |
 | v4.2  | 2026-07-14 | 到期日期 + 搜索 + 筛选 + 统计面板：due_date 字段、日期自动格式化、实时搜索、状态筛选、任务统计 |
+| v4.3  | 2026-07-14 | 深色/浅色主题切换 + JSON/CSV 数据导出 |
+| v5.0  | 2026-07-15 | 智能提醒后端（Rust Axum 规则引擎） |
+| v5.1  | 2026-07-15 | 前端提醒面板（danger/warning/info 分级展示） |
+| v5.2  | 2026-07-15 | 浏览器系统通知（Notification API + sessionStorage 防重复） |
 
 ## 后续计划
 

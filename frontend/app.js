@@ -48,6 +48,7 @@ async function loadTodos() {
     allTodos = [];
     applyFilters();
   }
+  loadReminders();
 }
 
 // POST /todos
@@ -495,3 +496,76 @@ setupDropdown("sort-dropdown", (item) => {
   currentSort = item.dataset.sort;
   applyFilters();
 });
+
+// === 智能提醒面板 ===
+async function loadReminders() {
+  try {
+    const res = await fetch(`${API_BASE}/api/reminders`);
+    if (!res.ok) return;
+    const data = await res.json();
+    renderReminders(data);
+    sendBrowserNotifications(data);
+  } catch {
+    // 静默失败，不影响主流程
+  }
+}
+
+function renderReminders(reminders) {
+  const panel = document.getElementById("reminder-panel");
+  const list = document.getElementById("reminder-list");
+  const count = document.getElementById("reminder-count");
+
+  count.textContent = String(reminders.length);
+
+  if (reminders.length === 0) {
+    panel.style.display = "none";
+    return;
+  }
+
+  panel.style.display = "block";
+  list.innerHTML = "";
+
+  reminders.forEach((r) => {
+    const icon = r.level === "danger" ? "🔴" : r.level === "warning" ? "⚠️" : "ℹ️";
+    const item = document.createElement("div");
+    item.className = `reminder-item level-${r.level}`;
+    item.innerHTML = `<span class="reminder-icon">${icon}</span><span class="reminder-msg">${r.message}</span>`;
+    list.appendChild(item);
+  });
+}
+
+// === 浏览器通知 ===
+async function sendBrowserNotifications(reminders) {
+  if (!("Notification" in window)) return;
+
+  const important = reminders.filter((r) => r.level !== "info");
+  if (important.length === 0) return;
+
+  if (Notification.permission === "denied") return;
+
+  if (Notification.permission === "default") {
+    const result = await Notification.requestPermission();
+    if (result !== "granted") return;
+  }
+
+  let notified = [];
+  try {
+    const raw = sessionStorage.getItem("todo_notified");
+    if (raw) notified = JSON.parse(raw);
+  } catch {
+    notified = [];
+  }
+
+  important.forEach((r) => {
+    const key = `${r.todo_id}_${r.type}`;
+    if (notified.includes(key)) return;
+    new Notification("Todo智能提醒", { body: r.message });
+    notified.push(key);
+  });
+
+  try {
+    sessionStorage.setItem("todo_notified", JSON.stringify(notified));
+  } catch {
+    // storage full etc.
+  }
+}

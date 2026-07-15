@@ -1,5 +1,6 @@
 mod db;
 mod models;
+mod reminders;
 mod routes;
 
 use axum::http::{HeaderValue, Method, header::CONTENT_TYPE};

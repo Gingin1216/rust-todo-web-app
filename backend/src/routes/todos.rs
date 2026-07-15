@@ -4,6 +4,7 @@ use axum::{
     http::StatusCode,
     routing::{get, patch, put},
 };
+use chrono::Utc;
 use sqlx::MySqlPool;
 
 use crate::models::{CreateTodo, Todo};
@@ -25,7 +26,7 @@ pub fn router() -> Router<MySqlPool> {
 // GET /todos — 查询全部
 async fn get_todos(State(pool): State<MySqlPool>) -> Result<Json<Vec<Todo>>, StatusCode> {
     let todos = sqlx::query_as::<_, Todo>(
-        "SELECT id, title, completed, priority, due_date FROM todos ORDER BY id ASC",
+        "SELECT id, title, completed, priority, due_date, created_at FROM todos ORDER BY id ASC",
     )
     .fetch_all(&pool)
     .await
@@ -58,6 +59,7 @@ async fn create_todo(
         completed: false,
         priority,
         due_date: payload.due_date,
+        created_at: Utc::now(),
     };
 
     Ok((StatusCode::CREATED, Json(todo)))
@@ -93,7 +95,7 @@ async fn update_todo(
     }
 
     let todo = sqlx::query_as::<_, Todo>(
-        "SELECT id, title, completed, priority, due_date FROM todos WHERE id = ?",
+        "SELECT id, title, completed, priority, due_date, created_at FROM todos WHERE id = ?",
     )
     .bind(id)
     .fetch_one(&pool)
@@ -119,7 +121,7 @@ async fn toggle_todo(
     }
 
     let todo = sqlx::query_as::<_, Todo>(
-        "SELECT id, title, completed, priority, due_date FROM todos WHERE id = ?",
+        "SELECT id, title, completed, priority, due_date, created_at FROM todos WHERE id = ?",
     )
     .bind(id)
     .fetch_one(&pool)
@@ -127,7 +129,7 @@ async fn toggle_todo(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok((StatusCode::OK, Json(todo)))
-}
+} 
 
 // DELETE /todos/:id
 async fn delete_todo(Path(id): Path<u64>, State(pool): State<MySqlPool>) -> Result<StatusCode, StatusCode> {

@@ -1,4 +1,5 @@
 use chrono::NaiveDate;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -10,6 +11,7 @@ pub struct Todo {
     pub completed: bool,
     pub priority: i32,
     pub due_date: Option<NaiveDate>,
+    pub created_at: DateTime<Utc>,
 }
 
 /// 创建 / 更新请求体；priority 可选，未传时创建默认 2，更新时保持不变

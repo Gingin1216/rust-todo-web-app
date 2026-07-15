@@ -725,3 +725,59 @@ body {
 .export-btn:active {
   transform: scale(0.96);
 }
+
+#reminder-panel {
+  margin-bottom: 16px;
+}
+
+.reminder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reminder-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  border: 1px solid;
+}
+
+.reminder-item .reminder-icon {
+  flex-shrink: 0;
+  width: 18px;
+  text-align: center;
+}
+
+.reminder-item .reminder-msg {
+  flex: 1;
+}
+
+.reminder-item.level-danger {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+}
+
+.reminder-item.level-warning {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
+  color: #f59e0b;
+}
+
+.reminder-item.level-info {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.25);
+  color: #3b82f6;
+}
+
+.reminder-empty {
+  padding: 12px 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}

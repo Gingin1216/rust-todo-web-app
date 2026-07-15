@@ -161,3 +161,103 @@
 * 根据 app.js 中 JS 引用的所有 id/class，对照 styles.css 的样式定义，重建完整的 index.html
 * 编辑模式使用相同的 .due-date-input 类，额外添加 .edit-date-input 仅调整 margin-top
 * 实现 formatDateInput() 函数用正则自动插入连字符，isValidDate() 函数校验年/月/日值的合法性
+
+---
+
+## v4.3 — 主题切换与数据导出
+
+日期：2026-07-14
+
+### 完成内容
+
+* 深色/浅色主题切换：CSS Variables 体系 + data-theme 属性 + localStorage 持久化
+* JSON 数据导出：完整备份 allTodos，保留 id/completed/priority/due_date 原始结构
+* CSV 数据导出：用户友好格式，新增 title/status/priority/due_date 列，completed 映射为已完成/未完成，priority 映射为高/中/低
+* 下拉菜单组件：导出选项收纳为「导出 ▼」单个按钮，排序选项收纳为「排序 ▼」单个按钮
+
+### 技术实现
+
+* 主题：document.documentElement.setAttribute("data-theme", theme) + CSS [data-theme="light"]
+* 导出：Blob + URL.createObjectURL + `<a>.download`，JSON 保留原始结构，CSV 含 BOM 支持 Excel 直接打开
+* 下拉菜单：position: absolute + opacity/transform 动画 + 点击外部自动关闭
+
+---
+
+## v5.0 — 智能提醒后端
+
+日期：2026-07-15
+
+### 完成内容
+
+* 新增后端 reminders 模块：reminders/mod.rs（规则引擎）+ routes/reminders.rs（HTTP handler）+ models/reminder.rs（结构体）
+* 新增 GET /api/reminders 端点，返回所有未完成任务的智能提醒列表
+* Todo 模型增加 created_at: DateTime<Utc> ，利用已有 TIMESTAMP 列
+* 提醒根据 severity 排序：danger → warning → info
+
+### 智能提醒规则
+
+| 规则 | 触发条件 | level | 示例消息 |
+|------|---------|-------|---------|
+| 已过期 | due_date < today && !completed | danger | 任务《xxx》已经延期3天 |
+| 今天截止 | due_date == today && !completed | warning | 任务《xxx》今天截止，请及时完成 |
+| 高优先级 | priority == 1 && !completed | danger | 高优先级任务《xxx》仍未完成，请优先处理 |
+| 长时间未完成 | created_at < today - 7d && !completed | info | 任务《xxx》已经等待7天 |
+
+### 技术实现
+
+* 模块结构：models/reminder.rs（Reminder/ReminderLevel）→ reminders/mod.rs（规则函数）→ routes/reminders.rs（HTTP 层）
+* 类型映射：MySQL TIMESTAMP → chrono::DateTime<Utc>（修复 NaiveDateTime 不兼容问题）
+* 路由注册：routes/mod.rs 中先 merge 两个 router，再统一 with_state(pool)
+* 错误日志：map_err 时 eprintln! 输出真实错误，不吞没
+
+### 遇到的问题
+
+1. sqlx 的 chrono::NaiveDateTime 不支持 MySQL TIMESTAMP 类型列，解码时报 ColumnDecode 错误
+
+### 解决方案
+
+* 改用 chrono::DateTime<Utc>，sqlx 的 Decode 实现支持 MYSQL_TYPE_TIMESTAMP
+* DateTime<Utc> 对应使用 .date_naive()（而非已废弃的 .date()）获取 NaiveDate 用于天数计算
+
+---
+
+## v5.1 — 前端提醒面板
+
+日期：2026-07-15
+
+### 完成内容
+
+* 前端新增智能提醒面板，位于工具栏与待办列表之间
+* 页面加载及每次 CRUD 后自动请求 GET /api/reminders
+* 按 level 分级展示：danger（红色）、warning（黄色）、info（蓝色）
+* 提醒数量为 0 时自动隐藏面板，避免空状态占用空间
+* 复用 `.panel` 卡片样式，与待办列表视觉一致
+
+### 技术实现
+
+* 新增 loadReminders() 和 renderReminders() 两个函数
+* loadTodos() 末尾追加 loadReminders() 调用，覆盖所有 CRUD 场景
+* renderReminders() 根据 level 设置不同 CSS class 和图标（🔴/⚠️/ℹ️）
+* 面板 display: none/block 切换，无需额外 empty state 文字
+
+---
+
+## v5.2 — 浏览器系统通知
+
+日期：2026-07-15
+
+### 完成内容
+
+* 使用浏览器原生 Notification API 发送系统通知
+* 仅处理 danger/warning 级别提醒，忽略 info
+* 权限管理：default → requestPermission()，granted → 发送，denied → 静默
+* 使用 sessionStorage 防止同一会话中重复通知
+
+### 技术实现
+
+* 新增 sendBrowserNotifications() 函数，在 loadReminders() 中 renderReminders() 之后调用
+* 特性检测：if (!("Notification" in window)) return;
+* 防重复 key 格式：`${todo_id}_${type}`（如 8_overdue、8_high_priority）
+* sessionStorage 读写全部包裹 try-catch 异常保护
+* 异步处理：await Notification.requestPermission() 等待用户授权
+* 所有后端/HTML/CSS 零改动，仅修改 frontend/app.js
